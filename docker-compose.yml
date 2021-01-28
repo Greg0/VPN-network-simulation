@@ -1,0 +1,46 @@
+version: "3.3"
+
+services:
+  db:
+    build: db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=app
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+    ports:
+      - 8083:3306
+    networks:
+      internal:
+          ipv4_address: "172.16.238.10"
+  vpn_server:
+    build: vpn_server
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 1194:1194/udp
+    networks:
+      - vpn_network_simulation_vpn_server
+      - internal
+  vpn_client:
+    build: vpn_client
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    command: --config /vpn/client.ovpn
+    networks:
+      - vpn_network_simulation_vpn_server
+    depends_on:
+      - vpn_server
+networks:
+  vpn_network_simulation_vpn_server:
+    external: true
+  internal:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: "172.16.238.0/24"
